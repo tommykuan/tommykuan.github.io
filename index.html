@@ -6,6 +6,11 @@
 <title>Tommy Kuan</title>
 <meta name="description" content="Tommy Kuan, Engineering Manager.">
 <meta name="theme-color" content="#050506">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -16,90 +21,111 @@
   #bg{position:fixed;inset:0;width:100vw;height:100vh;display:block}
   .nogl #bg{display:none}
   .nogl body{background:radial-gradient(120% 80% at 70% 20%,#3a3d44 0%,#111214 45%,#050506 100%)}
-  main{position:relative;height:100svh;display:flex;align-items:flex-end;padding:0 max(24px,5vw) max(40px,9vh)}
-  .id{text-shadow:0 2px 24px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
-  h1{margin:0;font-weight:600;font-size:clamp(44px,7.5vw,88px);letter-spacing:-.035em;line-height:.95}
-  p{margin:14px 0 0;font-size:clamp(16px,1.7vw,20px);color:#C9CCD1;letter-spacing:.01em}
+  .id{position:fixed;text-shadow:0 2px 24px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  h1{margin:0;font-weight:600;letter-spacing:-.035em;line-height:.92}
+  h1 span{display:block}
+  p{margin:14px 0 0;color:#C9CCD1}
+  /* desktop: Split — name left, vertically centered */
+  .id{left:max(32px,6.25vw);top:50%;transform:translateY(-50%)}
+  h1{font-size:clamp(56px,7.5vw,112px)}
+  p{font-size:clamp(16px,1.6vw,21px)}
+  /* phone: Stacked — name bottom-left */
   @media (max-width:600px){
-    main{align-items:center;justify-content:flex-start;padding:0 24px}
-    h1{font-size:clamp(56px,17vw,72px);line-height:.92}
-    h1 span{display:block}
+    .id{left:24px;right:24px;top:auto;bottom:max(64px,calc(env(safe-area-inset-bottom) + 40px));transform:none}
+    h1{font-size:clamp(54px,17vw,72px)}
     p{font-size:17px}
   }
 </style>
 </head>
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
-<main>
-  <div class="id">
-    <h1><span>Tommy</span> <span>Kuan</span></h1>
-    <p>Engineering Manager</p>
-  </div>
-</main>
+<div class="id"><h1><span>Tommy</span> <span>Kuan</span></h1><p>Engineering Manager</p></div>
 <script>
-/* Silver liquid chrome — WebGL fragment shader (locked settings below). */
+/* Silver liquid chrome + 1-bit dithered portrait (WebGL). Settings are locked; see HANDOFF.md. */
 const FRAG=`#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 R;uniform float T;uniform vec2 OFF;
-uniform float SCALE,WARP,OCT,LACU,RELIEF,SHINE,SPEC,SHEEN,ENVR,ENVF,GAP,GAPS,AMB,DIFP,LANG,LEL,SPD,GRAIN,DUO,DMIX,DSOFT,CONTRAST,FLOWDIR,STRETCH;
-uniform vec3 C0,C1,C2,C3,D0,D1,D2,D3;
+uniform vec2 R;uniform float T;
+uniform float SCALE,WARP,OCT,LACU,RELIEF,SHINE,SPEC,SHEEN,ENVR,ENVF,GAP,GAPS,AMB,DIFP,LANG,LEL,SPD,GRAIN,CONTRAST,FLOWDIR,STRETCH;
+uniform vec3 C0,C1,C2,C3;
+uniform sampler2D PH;
+uniform vec2 PC;uniform float PSZ,PAR,PX,BIT,PAT,SHP,AMT,FADE,BFADE,EXPO,GAM,DIM,BBRT,BLK;
+uniform float BAMT,BRATE,BDUR,BSOFT,BMODE;
 float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);
   return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
-float fbm(vec2 p){float v=0.,a=.5,s=0.;
-  for(int i=0;i<6;i++){if(float(i)>=OCT)break;v+=a*n(p);s+=a;p=p*LACU+vec2(1.7,9.2);a*=.5;}
-  return v/s;}
-float H(vec2 p,float t){
-  vec2 dir=vec2(cos(FLOWDIR),sin(FLOWDIR));
+float fbm(vec2 p){float v=0.,a=.5,s=0.;for(int i=0;i<6;i++){if(float(i)>=OCT)break;v+=a*n(p);s+=a;p=p*LACU+vec2(1.7,9.2);a*=.5;}return v/s;}
+float H(vec2 p,float t){vec2 dir=vec2(cos(FLOWDIR),sin(FLOWDIR));
   vec2 w=vec2(fbm(p*.9+dir*t*.07+vec2(0.,-t*.03)),fbm(p*.9+vec2(5.2,1.3)-dir*t*.06+vec2(t*.03,0.)));
-  return fbm(p+WARP*w+dir*t*.04);
-}
-vec3 ramp(float x,vec3 a,vec3 b,vec3 c,vec3 d){
-  x=clamp(x,0.,1.);
-  if(x<.33)return mix(a,b,smoothstep(0.,.33,x));
-  if(x<.7)return mix(b,c,smoothstep(.33,.7,x));
-  return mix(c,d,smoothstep(.7,1.,x));
-}
+  return fbm(p+WARP*w+dir*t*.04);}
+vec3 ramp(float x){x=clamp(x,0.,1.);if(x<.33)return mix(C0,C1,smoothstep(0.,.33,x));if(x<.7)return mix(C1,C2,smoothstep(.33,.7,x));return mix(C2,C3,smoothstep(.7,1.,x));}
+vec2 toU(vec2 frag){vec2 s=frag/R;s.y=1.-s.y;vec2 d=(s-PC)*vec2(R.x/R.y,1.)/PSZ;return vec2(d.x/PAR+.5,d.y+.5);}
+float maskU(vec2 u){float ins=step(0.,u.x)*step(u.x,1.)*step(0.,u.y)*step(u.y,1.);
+  float r=length(u-.5);float soft=1.-smoothstep(.5-.45*FADE-.02,.52,r);
+  float bot=1.-smoothstep(1.-BFADE*.55,1.,u.y);return ins*mix(1.,soft,step(.01,FADE))*bot;}
+float bayer4(vec2 p){vec2 q=mod(floor(p),4.);float x=q.x,y=q.y;float a1=mod(x,2.),b1=mod(y,2.),a2=floor(x/2.),b2=floor(y/2.);
+  return ((a1*2.+mod(a1+b1,2.))*4.+(a2*2.+mod(a2+b2,2.))+.5)/16.;}
+float bayer8(vec2 p){vec2 q=mod(floor(p),8.);vec2 a=mod(q,2.),b=mod(floor(q/2.),2.),c=floor(q/4.);
+  float v=(a.x*2.+mod(a.x+a.y,2.))*16.+(b.x*2.+mod(b.x+b.y,2.))*4.+(c.x*2.+mod(c.x+c.y,2.));return (v+.5)/64.;}
 void main(){
-  vec2 p=(gl_FragCoord.xy/min(R.y,R.x*1.4)+OFF)*SCALE;p.y*=STRETCH;float t=T*SPD;
-  float e=.003;
+  vec2 frag=gl_FragCoord.xy;float N=min(R.y,R.x*1.4);
+  vec2 p=(frag/N)*SCALE;p.y*=STRETCH;float t=T*SPD;float e=.003;
   float h0=H(p,t),hx=H(p+vec2(e,0.),t),hy=H(p+vec2(0.,e),t);
   vec3 nr=normalize(vec3(-(hx-h0)/e*RELIEF,-(hy-h0)/e*RELIEF,1.));
-  vec3 L=normalize(vec3(cos(LANG)*cos(LEL),sin(LANG)*cos(LEL),sin(LEL)));
-  vec3 V=vec3(0.,0.,1.);
-  float dif=max(dot(nr,L),0.);
-  float rv=max(dot(reflect(-L,nr),V),0.);
-  float spec=pow(rv,SHINE);
-  float sheen=pow(rv,max(SHINE*.14,1.5));
-  float rim=pow(1.-nr.z,1.4);
-  vec3 rf=reflect(-V,nr);
-  float env=smoothstep(.2,.65,.5+.5*sin(rf.y*ENVF+rf.x*ENVF*.5+h0*3.));
+  vec3 Ld=normalize(vec3(cos(LANG)*cos(LEL),sin(LANG)*cos(LEL),sin(LEL)));vec3 V=vec3(0.,0.,1.);
+  float dif=max(dot(nr,Ld),0.),rv=max(dot(reflect(-Ld,nr),V),0.),spec=pow(rv,SHINE),sheen=pow(rv,max(SHINE*.14,1.5)),rim=pow(1.-nr.z,1.4);
+  vec3 rf=reflect(-V,nr);float env=smoothstep(.2,.65,.5+.5*sin(rf.y*ENVF+rf.x*ENVF*.5+h0*3.));
   float body=smoothstep(GAP-GAPS,GAP+GAPS,h0);
   float lum=body*(AMB+pow(dif,DIFP)*.85+sheen*SHEEN+env*rim*ENVR)+spec*SPEC*body;
-  lum=pow(clamp(lum,0.,1.4)/1.1,CONTRAST);
-  vec3 col=ramp(lum,C0,C1,C2,C3);
-  if(DUO>.5){
-    float g=fbm(p*DMIX+vec2(9.1,3.7)+vec2(t*.03,-t*.02));
-    col=mix(col,ramp(lum,D0,D1,D2,D3),smoothstep(.5-DSOFT,.5+DSOFT,g));
+  lum=pow(clamp(lum,0.,1.4)/1.1,CONTRAST);vec3 col=ramp(lum);
+  /* ---- 1-bit portrait ---- */
+  float bs=max(1.,floor(BIT*PX+.5));vec2 cell=floor(frag/bs);vec2 cc=(cell+.5)*bs;
+  vec2 uc=toU(cc);float m=maskU(uc);
+  col*=1.-DIM*smoothstep(0.,.6,maskU(toU(frag)));
+  if(m>0.){
+    vec2 sp=cc;float clear=1.;
+    vec2 us=toU(sp);
+    float L=texture2D(PH,clamp(us,0.,1.)).r*clear;
+    L=max(L-BLK,0.)/(1.-BLK);L=clamp(pow(clamp(L*EXPO,0.,1.),GAM),0.,1.)*m;
+    float th=PAT<.5?bayer4(cell):(PAT<1.5?bayer8(cell):h(cell));
+    float on=step(th,L*1.02);
+    /* random blinking: each cycle a random subset of bits blinks once */
+    if(BAMT>0.){
+      float r=h(cell*1.13+.7);float ph=T*BRATE+r*7.31;float ep=floor(ph);float f=fract(ph);
+      float pick=step(h(cell+ep*1.37+3.3),BAMT);
+      float win=step(f,BDUR);float env=sin(3.14159*clamp(f/max(BDUR,.001),0.,1.));
+      float b=pick*win*mix(1.,env,BSOFT);
+      float any=step(.015,L);
+      if(BMODE<.5)on=on*(1.-b);
+      else if(BMODE<1.5)on=max(on,b*any);
+      else on=on*(1.-b)+(1.-on)*b*any;
+    }
+    if(SHP>.5){vec2 lc=fract(frag/bs)-.5;on*=1.-smoothstep(.34,.46,length(lc));}
+    else{vec2 lc=abs(fract(frag/bs)-.5);on*=step(max(lc.x,lc.y),.5-.08*step(3.,bs));}
+    col=mix(col,vec3(BBRT),on*AMT);
   }
-  col+=(h(gl_FragCoord.xy+fract(T*7.))-.5)*GRAIN;
+  col+=(h(frag+fract(T*7.))-.5)*GRAIN;
   gl_FragColor=vec4(col,1.);
 }`;
-
-
-
-
 
 const VERT=`attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
 const DEG=Math.PI/180;
 const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-const CHROME={SCALE:2.36,WARP:2.07,OCT:3,LACU:1.9,STRETCH:1,FLOWDIR:201,SPD:.25,RELIEF:.75,SHINE:44,SPEC:.5,SHEEN:.42,ENVR:.48,ENVF:6.5,AMB:.12,DIFP:3.61,CONTRAST:1.39,GAP:.25,GAPS:.27,LANG:134,LEL:38,GRAIN:.088,DUO:0,DMIX:.55,DSOFT:.1,C0:'#050506',C1:'#2E3036',C2:'#9EA3AD',C3:'#FFFFFF',D0:'#000000',D1:'#000000',D2:'#000000',D3:'#000000'};
+const CHROME={SCALE:2.36,WARP:2.07,OCT:3,LACU:1.9,STRETCH:1,FLOWDIR:201,SPD:.25,RELIEF:.75,SHINE:44,SPEC:.5,SHEEN:.42,ENVR:.48,ENVF:6.5,AMB:.12,DIFP:3.61,CONTRAST:1.39,GAP:.25,GAPS:.27,LANG:134,LEL:38,GRAIN:.088,C0:'#050506',C1:'#2E3036',C2:'#9EA3AD',C3:'#FFFFFF'};
+const PORTRAIT={BIT:2,PAT:0,SHP:1,AMT:.9,EXPO:.91,GAM:1.1,FADE:.43,BFADE:.81,DIM:.72,BLK:.03,TWK:0};
+const BLINK={BAMT:.015,BRATE:.43,BDUR:.2,BSOFT:.33,BMODE:0};
+/* layout: center (fraction of viewport, y from top) and height (fraction of viewport height) */
+const LAYOUT={
+  phone:{cx:.44+.215,cy:.53+.13,size:.56*.77},   // Stacked + tuned offsets
+  desktop:{cx:.69,cy:.5,size:.74}               // Split
+};
+const mqPhone=matchMedia('(max-width:600px)');
+
 const bg=document.getElementById('bg');
 let gl=null;try{gl=bg.getContext('webgl',{antialias:false,alpha:false});}catch(e){}
-const U={};let ok=false;
+const U={};let ok=false,PAR=1,ready=false;
 if(gl){
   const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return gl.getShaderParameter(s,gl.COMPILE_STATUS)?s:null;};
   const vs=sh(gl.VERTEX_SHADER,VERT),fs=sh(gl.FRAGMENT_SHADER,FRAG);
@@ -108,24 +134,35 @@ if(gl){
       const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
       const al=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);
       const nk=Object.keys(CHROME).filter(k=>typeof CHROME[k]==='number');
-      ['R','T','OFF','C0','C1','C2','C3','D0','D1','D2','D3'].concat(nk).forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+      ['R','T','C0','C1','C2','C3','PH','PC','PSZ','PAR','PX','BBRT','TWK','BAMT','BRATE','BDUR','BSOFT','BMODE'].concat(nk,Object.keys(PORTRAIT)).forEach(k=>U[k]=gl.getUniformLocation(pr,k));
       const hexv=s=>{const v=parseInt(s.slice(1),16);return[(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];};
       for(const k of nk){let v=CHROME[k];if(k==='LANG'||k==='LEL'||k==='FLOWDIR')v*=DEG;gl.uniform1f(U[k],v);}
-      ['C0','C1','C2','C3','D0','D1','D2','D3'].forEach(k=>gl.uniform3fv(U[k],hexv(CHROME[k])));
-      gl.uniform2f(U.OFF,0,0);ok=true;}}
+      ['C0','C1','C2','C3'].forEach(k=>gl.uniform3fv(U[k],hexv(CHROME[k])));
+      for(const k in PORTRAIT)gl.uniform1f(U[k],PORTRAIT[k]);for(const k in BLINK)gl.uniform1f(U[k],RM?0:BLINK[k]);
+      gl.uniform1f(U.BBRT,.35+.62*PORTRAIT.AMT);gl.uniform1f(U.AMT,0);gl.uniform1i(U.PH,0);ok=true;
+      const img=new Image();img.onload=()=>{PAR=img.naturalWidth/img.naturalHeight;const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.uniform1f(U.AMT,1);ready=true;if(RM)requestAnimationFrame(frame);};
+      img.src='assets/portrait.jpg';}}
 }
 if(!ok)document.documentElement.classList.add('nogl');
 let last=performance.now(),t=RM?14:0,scale=1,slow=0,fast=0;
 function frame(now){
   const dt=Math.min(.1,(now-last)/1000);last=now;if(!RM)t+=dt;
-  const dpr=Math.min(devicePixelRatio||1,1.5)*scale,w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
+  const dpr=Math.min(devicePixelRatio||1,2)*scale,w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
   if(bg.width!==w||bg.height!==h){bg.width=w;bg.height=h;}
-  gl.viewport(0,0,w,h);gl.uniform2f(U.R,w,h);gl.uniform1f(U.T,t);gl.drawArrays(gl.TRIANGLES,0,3);
-  const ms=dt*1000;if(ms>24){slow++;fast=0;}else if(ms<13){fast++;slow=0;}          // adaptive resolution
+  const L=mqPhone.matches?LAYOUT.phone:LAYOUT.desktop;
+  gl.viewport(0,0,w,h);gl.uniform2f(U.R,w,h);gl.uniform1f(U.T,t);
+  gl.uniform2f(U.PC,L.cx,L.cy);gl.uniform1f(U.PSZ,L.size);gl.uniform1f(U.PAR,PAR);gl.uniform1f(U.PX,w/innerWidth);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  const ms=dt*1000;if(ms>24){slow++;fast=0;}else if(ms<13){fast++;slow=0;}
   if(slow>20&&scale>.5){scale=Math.max(.5,scale-.1);slow=0;}if(fast>120&&scale<1){scale=Math.min(1,scale+.1);fast=0;}
   if(!RM&&!document.hidden)requestAnimationFrame(frame);
 }
-if(ok){requestAnimationFrame(frame);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!RM){last=performance.now();requestAnimationFrame(frame);}});}
+if(ok){requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!RM){last=performance.now();requestAnimationFrame(frame);}});
+  addEventListener('resize',()=>{if(RM)requestAnimationFrame(frame);});}
 </script>
 </body>
 </html>

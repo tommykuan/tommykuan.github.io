@@ -1,0 +1,19 @@
+{
+ "name": "Tommy Kuan",
+ "short_name": "Tommy Kuan",
+ "icons": [
+  {
+   "src": "/assets/icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "/assets/icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ],
+ "theme_color": "#050506",
+ "background_color": "#050506",
+ "display": "standalone"
+}
