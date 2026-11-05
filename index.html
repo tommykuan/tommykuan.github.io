@@ -18,7 +18,10 @@
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;overflow:hidden;background:#050506}
   body{color:#F4F4F2;font:17px/1.5 'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  #bg{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+  /* Not position:fixed: iOS 26 Safari paints a flat color, not the canvas, under its toolbar for fixed edge elements.
+     The canvas runs 120px past the bottom so the chrome shows behind Safari's floating toolbar; the shader pins the
+     portrait and fold scale to the visible area (VO/VR), so the layout is unchanged. */
+  #bg{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 120px);height:calc(100lvh + 120px);display:block}
   .nogl #bg{display:none}
   .nogl body{background:radial-gradient(120% 80% at 70% 20%,#3a3d44 0%,#111214 45%,#050506 100%)}
   .id{position:fixed;text-shadow:0 2px 24px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
@@ -47,7 +50,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 R;uniform float T;
+uniform vec2 R,VO,VR;uniform float T;
 uniform float SCALE,WARP,OCT,LACU,RELIEF,SHINE,SPEC,SHEEN,ENVR,ENVF,GAP,GAPS,AMB,DIFP,LANG,LEL,SPD,GRAIN,CONTRAST,FLOWDIR,STRETCH;
 uniform vec3 C0,C1,C2,C3;
 uniform sampler2D PH;
@@ -61,7 +64,7 @@ float H(vec2 p,float t){vec2 dir=vec2(cos(FLOWDIR),sin(FLOWDIR));
   vec2 w=vec2(fbm(p*.9+dir*t*.07+vec2(0.,-t*.03)),fbm(p*.9+vec2(5.2,1.3)-dir*t*.06+vec2(t*.03,0.)));
   return fbm(p+WARP*w+dir*t*.04);}
 vec3 ramp(float x){x=clamp(x,0.,1.);if(x<.33)return mix(C0,C1,smoothstep(0.,.33,x));if(x<.7)return mix(C1,C2,smoothstep(.33,.7,x));return mix(C2,C3,smoothstep(.7,1.,x));}
-vec2 toU(vec2 frag){vec2 s=frag/R;s.y=1.-s.y;vec2 d=(s-PC)*vec2(R.x/R.y,1.)/PSZ;return vec2(d.x/PAR+.5,d.y+.5);}
+vec2 toU(vec2 frag){vec2 s=(frag-VO)/VR;s.y=1.-s.y;vec2 d=(s-PC)*vec2(VR.x/VR.y,1.)/PSZ;return vec2(d.x/PAR+.5,d.y+.5);}
 float maskU(vec2 u){float ins=step(0.,u.x)*step(u.x,1.)*step(0.,u.y)*step(u.y,1.);
   float r=length(u-.5);float soft=1.-smoothstep(.5-.45*FADE-.02,.52,r);
   float bot=1.-smoothstep(1.-BFADE*.55,1.,u.y);return ins*mix(1.,soft,step(.01,FADE))*bot;}
@@ -70,7 +73,7 @@ float bayer4(vec2 p){vec2 q=mod(floor(p),4.);float x=q.x,y=q.y;float a1=mod(x,2.
 float bayer8(vec2 p){vec2 q=mod(floor(p),8.);vec2 a=mod(q,2.),b=mod(floor(q/2.),2.),c=floor(q/4.);
   float v=(a.x*2.+mod(a.x+a.y,2.))*16.+(b.x*2.+mod(b.x+b.y,2.))*4.+(c.x*2.+mod(c.x+c.y,2.));return (v+.5)/64.;}
 void main(){
-  vec2 frag=gl_FragCoord.xy;float N=min(R.y,R.x*1.4);
+  vec2 frag=gl_FragCoord.xy;float N=min(VR.y,VR.x*1.4);
   vec2 p=(frag/N)*SCALE;p.y*=STRETCH;float t=T*SPD;float e=.003;
   float h0=H(p,t),hx=H(p+vec2(e,0.),t),hy=H(p+vec2(0.,e),t);
   vec3 nr=normalize(vec3(-(hx-h0)/e*RELIEF,-(hy-h0)/e*RELIEF,1.));
@@ -134,7 +137,7 @@ if(gl){
       const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
       const al=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);
       const nk=Object.keys(CHROME).filter(k=>typeof CHROME[k]==='number');
-      ['R','T','C0','C1','C2','C3','PH','PC','PSZ','PAR','PX','BBRT','TWK','BAMT','BRATE','BDUR','BSOFT','BMODE'].concat(nk,Object.keys(PORTRAIT)).forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+      ['R','VO','VR','T','C0','C1','C2','C3','PH','PC','PSZ','PAR','PX','BBRT','TWK','BAMT','BRATE','BDUR','BSOFT','BMODE'].concat(nk,Object.keys(PORTRAIT)).forEach(k=>U[k]=gl.getUniformLocation(pr,k));
       const hexv=s=>{const v=parseInt(s.slice(1),16);return[(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];};
       for(const k of nk){let v=CHROME[k];if(k==='LANG'||k==='LEL'||k==='FLOWDIR')v*=DEG;gl.uniform1f(U[k],v);}
       ['C0','C1','C2','C3'].forEach(k=>gl.uniform3fv(U[k],hexv(CHROME[k])));
@@ -150,11 +153,13 @@ if(!ok)document.documentElement.classList.add('nogl');
 let last=performance.now(),t=RM?14:0,scale=1,slow=0,fast=0;
 function frame(now){
   const dt=Math.min(.1,(now-last)/1000);last=now;if(!RM)t+=dt;
-  const dpr=Math.min(devicePixelRatio||1,2)*scale,w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
+  const dpr=Math.min(devicePixelRatio||1,2)*scale,cw=bg.clientWidth||innerWidth,ch=bg.clientHeight||innerHeight,w=Math.max(1,Math.round(cw*dpr)),h=Math.max(1,Math.round(ch*dpr));
   if(bg.width!==w||bg.height!==h){bg.width=w;bg.height=h;}
   const L=mqPhone.matches?LAYOUT.phone:LAYOUT.desktop;
   gl.viewport(0,0,w,h);gl.uniform2f(U.R,w,h);gl.uniform1f(U.T,t);
-  gl.uniform2f(U.PC,L.cx,L.cy);gl.uniform1f(U.PSZ,L.size);gl.uniform1f(U.PAR,PAR);gl.uniform1f(U.PX,w/innerWidth);
+  const k=w/cw,rc=bg.getBoundingClientRect();   // visible viewport inside the canvas, in GL pixels (origin bottom-left)
+  gl.uniform2f(U.VO,-rc.left*k,(ch-innerHeight+rc.top)*k);gl.uniform2f(U.VR,innerWidth*k,innerHeight*k);
+  gl.uniform2f(U.PC,L.cx,L.cy);gl.uniform1f(U.PSZ,L.size);gl.uniform1f(U.PAR,PAR);gl.uniform1f(U.PX,k);
   gl.drawArrays(gl.TRIANGLES,0,3);
   const ms=dt*1000;if(ms>24){slow++;fast=0;}else if(ms<13){fast++;slow=0;}
   if(slow>20&&scale>.5){scale=Math.max(.5,scale-.1);slow=0;}if(fast>120&&scale<1){scale=Math.min(1,scale+.1);fast=0;}
