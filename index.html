@@ -20,9 +20,10 @@
   html,body{height:100%;margin:0;overflow:hidden;background:#050506}
   body{color:#F4F4F2;font:17px/1.5 'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   /* Not position:fixed: iOS 26 Safari paints a flat color, not the canvas, under its toolbar for fixed edge elements.
-     The canvas runs 120px past the bottom so the chrome shows behind Safari's floating toolbar; the shader pins the
+     The canvas runs 120px past the bottom so the chrome shows behind Safari's floating toolbar, and 60px above the top:
+     the page is pre-scrolled by 60px (PRE, end of script) so that strip sits under the status bar. The shader pins the
      portrait and fold scale to the visible area (VO/VR), so the layout is unchanged. */
-  #bg{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 120px);height:calc(100lvh + 120px);display:block}
+  #bg{position:absolute;top:0;left:0;width:100%;height:calc(100vh + 180px);height:calc(100lvh + 180px);display:block}
   .nogl #bg{display:none}
   .nogl body{background:radial-gradient(120% 80% at 70% 20%,#3a3d44 0%,#111214 45%,#050506 100%)}
   .id{position:fixed;text-shadow:0 2px 24px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
@@ -169,6 +170,8 @@ function frame(now){
 if(ok){requestAnimationFrame(frame);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!RM){last=performance.now();requestAnimationFrame(frame);}});
   addEventListener('resize',()=>{if(RM)requestAnimationFrame(frame);});}
+/* Pre-scroll so the top 60px of chrome sits under the iOS Safari status bar (see #bg comment). */
+const PRE=60;const pre=()=>{if(scrollY!==PRE)scrollTo(0,PRE);};addEventListener('load',pre);addEventListener('resize',pre);addEventListener('scroll',pre);pre();
 </script>
 </body>
 </html>
