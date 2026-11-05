@@ -1,181 +1,131 @@
-<!DOCTYPE HTML>
-<!--
-	Strata by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-5ZFPR4508Q"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-
-		function gtag() {
-			dataLayer.push(arguments);
-		}
-		gtag('js', new Date());
-
-		gtag('config', 'G-5ZFPR4508Q');
-	</script>
-	<title>Tommy Kuan</title>
-	<link rel="icon" type="image/x-icon" href="assets/img/favicon.svg" />
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-	<link rel="stylesheet" href="assets/css/main.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tommy Kuan</title>
+<meta name="description" content="Tommy Kuan, Engineering Manager.">
+<meta name="theme-color" content="#050506">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:#050506}
+  body{color:#F4F4F2;font:17px/1.5 'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  #bg{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+  .nogl #bg{display:none}
+  .nogl body{background:radial-gradient(120% 80% at 70% 20%,#3a3d44 0%,#111214 45%,#050506 100%)}
+  main{position:relative;height:100svh;display:flex;align-items:flex-end;padding:0 max(24px,5vw) max(40px,9vh)}
+  .id{text-shadow:0 2px 24px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  h1{margin:0;font-weight:600;font-size:clamp(44px,7.5vw,88px);letter-spacing:-.035em;line-height:.95}
+  p{margin:14px 0 0;font-size:clamp(16px,1.7vw,20px);color:#C9CCD1;letter-spacing:.01em}
+  @media (max-width:600px){
+    main{align-items:center;justify-content:flex-start;padding:0 24px}
+    h1{font-size:clamp(56px,17vw,72px);line-height:.92}
+    h1 span{display:block}
+    p{font-size:17px}
+  }
+</style>
 </head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<main>
+  <div class="id">
+    <h1><span>Tommy</span> <span>Kuan</span></h1>
+    <p>Engineering Manager</p>
+  </div>
+</main>
+<script>
+/* Silver liquid chrome — WebGL fragment shader (locked settings below). */
+const FRAG=`#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 R;uniform float T;uniform vec2 OFF;
+uniform float SCALE,WARP,OCT,LACU,RELIEF,SHINE,SPEC,SHEEN,ENVR,ENVF,GAP,GAPS,AMB,DIFP,LANG,LEL,SPD,GRAIN,DUO,DMIX,DSOFT,CONTRAST,FLOWDIR,STRETCH;
+uniform vec3 C0,C1,C2,C3,D0,D1,D2,D3;
+float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);
+  return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5,s=0.;
+  for(int i=0;i<6;i++){if(float(i)>=OCT)break;v+=a*n(p);s+=a;p=p*LACU+vec2(1.7,9.2);a*=.5;}
+  return v/s;}
+float H(vec2 p,float t){
+  vec2 dir=vec2(cos(FLOWDIR),sin(FLOWDIR));
+  vec2 w=vec2(fbm(p*.9+dir*t*.07+vec2(0.,-t*.03)),fbm(p*.9+vec2(5.2,1.3)-dir*t*.06+vec2(t*.03,0.)));
+  return fbm(p+WARP*w+dir*t*.04);
+}
+vec3 ramp(float x,vec3 a,vec3 b,vec3 c,vec3 d){
+  x=clamp(x,0.,1.);
+  if(x<.33)return mix(a,b,smoothstep(0.,.33,x));
+  if(x<.7)return mix(b,c,smoothstep(.33,.7,x));
+  return mix(c,d,smoothstep(.7,1.,x));
+}
+void main(){
+  vec2 p=(gl_FragCoord.xy/min(R.y,R.x*1.4)+OFF)*SCALE;p.y*=STRETCH;float t=T*SPD;
+  float e=.003;
+  float h0=H(p,t),hx=H(p+vec2(e,0.),t),hy=H(p+vec2(0.,e),t);
+  vec3 nr=normalize(vec3(-(hx-h0)/e*RELIEF,-(hy-h0)/e*RELIEF,1.));
+  vec3 L=normalize(vec3(cos(LANG)*cos(LEL),sin(LANG)*cos(LEL),sin(LEL)));
+  vec3 V=vec3(0.,0.,1.);
+  float dif=max(dot(nr,L),0.);
+  float rv=max(dot(reflect(-L,nr),V),0.);
+  float spec=pow(rv,SHINE);
+  float sheen=pow(rv,max(SHINE*.14,1.5));
+  float rim=pow(1.-nr.z,1.4);
+  vec3 rf=reflect(-V,nr);
+  float env=smoothstep(.2,.65,.5+.5*sin(rf.y*ENVF+rf.x*ENVF*.5+h0*3.));
+  float body=smoothstep(GAP-GAPS,GAP+GAPS,h0);
+  float lum=body*(AMB+pow(dif,DIFP)*.85+sheen*SHEEN+env*rim*ENVR)+spec*SPEC*body;
+  lum=pow(clamp(lum,0.,1.4)/1.1,CONTRAST);
+  vec3 col=ramp(lum,C0,C1,C2,C3);
+  if(DUO>.5){
+    float g=fbm(p*DMIX+vec2(9.1,3.7)+vec2(t*.03,-t*.02));
+    col=mix(col,ramp(lum,D0,D1,D2,D3),smoothstep(.5-DSOFT,.5+DSOFT,g));
+  }
+  col+=(h(gl_FragCoord.xy+fract(T*7.))-.5)*GRAIN;
+  gl_FragColor=vec4(col,1.);
+}`;
 
-<body class="is-preload">
 
-	<!-- Header -->
-	<header id="header">
-		<div class="inner">
-			<a href="#main" class="no-border"><img src="assets/img/avatar.jpg" alt="" class="image avatar" /></a>
-			<h1>I am <strong>Tommy Kuan</strong><br /> a <strong>Software Development Engineer</strong><br /> w/ a BSc
-				in <strong>Computational Physics</strong><br /> interested in <strong>Solving Problems With
-					Tech</strong>.</h1>
-		</div>
-		<h5>Go | Typescript | Python | Java | Docker | Unix</h5>
-	</header>
 
-	<!-- Main -->
-	<div id="main">
 
-		<!-- About Me -->
-		<section id="about-me">
-			<header class="major">
-				<h2>Hello There! 👋</h2>
-			</header>
-			<p>I am a software engineer excited about solving problems with the power of building efficient software.
-				Being trained as a physicist at the University of Minnesota, I excelled at narrow down abstract ideas
-				and rigid constraints into simple
-				solvable problems and with a computational emphasis, I am able to capitalize my talent by implementing
-				them for the best intentions with analysis. I automate whenever I can 🤖.</p>
-			<ul class="actions">
-				<li><a href="#contact" class="button">Come Say Hi 📨</a></li>
-			</ul>
-		</section>
 
-		<!-- Experiences -->
-		<section id="experiences">
-			<h2>My Journey So Far 🎯</h2>
-			<div class="row">
-				<article class="col-6 col-12-xsmall work-item">
-					<img src="images/sezzle.png" alt="" class="image fit thumb" /></a>
-					<a href="https://sezzle.com" target="_blank" class="title"> Sezzle Inc </a>
-					<p>Software Engineer — <i>Shopper Operations Team</i></p>
-					<p>Main responsibility includes developing and maintaining the shopper authentication and
-						authorization system with 3.4 Million active users as of Jan 2022.</p>
-				</article>
-
-				<article class="col-6 col-12-xsmall work-item">
-					<img src="images/LISA-waves.jpg" alt="" class="image fit thumb" />
-					<a href="https://sites.google.com/umn.edu/ligo/home" target="_blank" class="title"> University of
-						Minnesota </a>
-					<p>Research Assistant</p>
-					<p>Convert mathematical equations into algorithms for the <a
-							href="https://github.com/sharanbngr/blip">Bayesian LISA Pipeline</a> written by Sharan
-						Banagiri that detects parameters of interest from the stochastic gravitational wave backgrounds.
-					</p>
-				</article>
-
-				<article class="col-6 col-12-xsmall work-item">
-					<img src="images/ta.jpg" alt="" class="image fit thumb" />
-					<a href="https://cse.umn.edu/physics" target="_blank" class="title"> School of Physics and
-						Astronomy</a>
-					<p>Teaching Assistant</p>
-					<p>Helped professors to recognize and solve issues students were facing in class and conducted tutor
-						and discussion sessions to increase students' interest in physics.</p>
-				</article>
-
-				<article class="col-6 col-12-xsmall work-item">
-					<img src="images/MCMC.png" alt="" class="image fit thumb" />
-					<a href="https://university.sunway.edu.my/set/facilities/HOME-lab?fbclid=IwAR0iw74S4NmmYz7JMy9ECzpnM5zctNhFL0ALNA73Son7O-FEjdIB4V1qwoo"
-						target="_blank" class="title"> H.O.M.E. Lab, Sunway University </a>
-					<p>Research Assistant</p>
-					<p>Led an interdisciplinary research project funded by the <a
-							href="https://www.mcmc.gov.my/en/home"> MCMC </a> that aide the visually impaired (VI)
-						communities to catch up with the e-commerce transformation.</p>
-				</article>
-
-			</div>
-			<ul class="actions">
-				<li><a href="/assets/TommyKuanResume.pdf" download="TommyKuan" class="button">Get My Resume 📝</a></li>
-			</ul>
-		</section>
-
-		<!-- Contact -->
-		<section id="contact">
-			<h2>Let's chat 😉</h2>
-			<p>Problems are solved by talking. Feel free to hit me up with a new opportunities, there's always a cooler
-				fish elsewhere. I'd love to learn new ideas and maybe make them happen!</p>
-			<div class="row">
-				<div class="col-8 col-12-small">
-					<form method="post" id="message-form"
-						action="https://formsubmit.co/365d2d4f19bea662a198a85accaf8519">
-						<p id="error" hidden>Please fill out all fields.</p>
-						<div class="row gtr-uniform gtr-50">
-							<div class="col-6 col-12-xsmall"><input type="text" name="name" id="name" placeholder="Name"
-									required /></div>
-							<div class="col-6 col-12-xsmall"><input type="email" name="email" id="email"
-									placeholder="Email" required /></div>
-							<div class="col-12"><textarea name="message" id="message" placeholder="Message" rows="4"
-									style="resize: none;"></textarea></div>
-						</div>
-						<div style="padding-top: 20px;">
-							<ul class="actions">
-								<li><input type="submit" value="Send Message" onclick="resetForm" /></li>
-							</ul>
-						</div>
-					</form>
-				</div>
-				<div class="col-4 col-12-small">
-					<ul class="labeled-icons">
-						<li>
-							<h3 class="icon solid fa-home"><span class="label">Address</span></h3>
-							Remote<br /> Minneapolis, MN 55414<br /> United States
-						</li>
-						<li>
-							<h3 class="icon brands fa-linkedin-in"><span class="label">LinkedIn</span></h3>
-							<a href="https://www.linkedin.com/in/tommy-kuan/" target="_blank">LinkedIn</a>
-						</li>
-					</ul>
-				</div>
-			</div>
-		</section>
-
-		<script>
-			function resetForm() {
-				document.getElementById("message-form").reset();
-			}
-		</script>
-	</div>
-
-	<!-- Footer -->
-	<footer id="footer">
-		<div class="inner">
-			<ul class="icons">
-				<li><a href="https://github.com/tommykuan" target="_blank" class="icon brands fa-github"><span
-							class="label">Github</span></a></li>
-				<li><a href="https://www.linkedin.com/in/tommy-kuan" target="_blank"
-						class="icon brands fa-linkedin-in"><span class="label">LinkedIn</span></a></li>
-			</ul>
-			<ul class="copyright">
-				<li>&copy; Tommy Kuan</li>
-				<li>Design by <a href="http://html5up.net">HTML5 UP</a></li>
-			</ul>
-		</div>
-	</footer>
-
-	<!-- Scripts -->
-	<script src="assets/js/jquery.min.js"></script>
-	<script src="assets/js/jquery.poptrox.min.js"></script>
-	<script src="assets/js/browser.min.js"></script>
-	<script src="assets/js/breakpoints.min.js"></script>
-	<script src="assets/js/util.js"></script>
-	<script src="assets/js/main.js"></script>
-
+const VERT=`attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+const DEG=Math.PI/180;
+const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CHROME={SCALE:2.36,WARP:2.07,OCT:3,LACU:1.9,STRETCH:1,FLOWDIR:201,SPD:.25,RELIEF:.75,SHINE:44,SPEC:.5,SHEEN:.42,ENVR:.48,ENVF:6.5,AMB:.12,DIFP:3.61,CONTRAST:1.39,GAP:.25,GAPS:.27,LANG:134,LEL:38,GRAIN:.088,DUO:0,DMIX:.55,DSOFT:.1,C0:'#050506',C1:'#2E3036',C2:'#9EA3AD',C3:'#FFFFFF',D0:'#000000',D1:'#000000',D2:'#000000',D3:'#000000'};
+const bg=document.getElementById('bg');
+let gl=null;try{gl=bg.getContext('webgl',{antialias:false,alpha:false});}catch(e){}
+const U={};let ok=false;
+if(gl){
+  const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return gl.getShaderParameter(s,gl.COMPILE_STATUS)?s:null;};
+  const vs=sh(gl.VERTEX_SHADER,VERT),fs=sh(gl.FRAGMENT_SHADER,FRAG);
+  if(vs&&fs){const pr=gl.createProgram();gl.attachShader(pr,vs);gl.attachShader(pr,fs);gl.linkProgram(pr);
+    if(gl.getProgramParameter(pr,gl.LINK_STATUS)){gl.useProgram(pr);
+      const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+      const al=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(al);gl.vertexAttribPointer(al,2,gl.FLOAT,false,0,0);
+      const nk=Object.keys(CHROME).filter(k=>typeof CHROME[k]==='number');
+      ['R','T','OFF','C0','C1','C2','C3','D0','D1','D2','D3'].concat(nk).forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+      const hexv=s=>{const v=parseInt(s.slice(1),16);return[(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];};
+      for(const k of nk){let v=CHROME[k];if(k==='LANG'||k==='LEL'||k==='FLOWDIR')v*=DEG;gl.uniform1f(U[k],v);}
+      ['C0','C1','C2','C3','D0','D1','D2','D3'].forEach(k=>gl.uniform3fv(U[k],hexv(CHROME[k])));
+      gl.uniform2f(U.OFF,0,0);ok=true;}}
+}
+if(!ok)document.documentElement.classList.add('nogl');
+let last=performance.now(),t=RM?14:0,scale=1,slow=0,fast=0;
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;if(!RM)t+=dt;
+  const dpr=Math.min(devicePixelRatio||1,1.5)*scale,w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
+  if(bg.width!==w||bg.height!==h){bg.width=w;bg.height=h;}
+  gl.viewport(0,0,w,h);gl.uniform2f(U.R,w,h);gl.uniform1f(U.T,t);gl.drawArrays(gl.TRIANGLES,0,3);
+  const ms=dt*1000;if(ms>24){slow++;fast=0;}else if(ms<13){fast++;slow=0;}          // adaptive resolution
+  if(slow>20&&scale>.5){scale=Math.max(.5,scale-.1);slow=0;}if(fast>120&&scale<1){scale=Math.min(1,scale+.1);fast=0;}
+  if(!RM&&!document.hidden)requestAnimationFrame(frame);
+}
+if(ok){requestAnimationFrame(frame);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!RM){last=performance.now();requestAnimationFrame(frame);}});}
+</script>
 </body>
-
 </html>
